@@ -316,7 +316,7 @@ impl Notifications {
     async fn get_server_information(
         &self,
     ) -> (&'static str, &'static str, &'static str, &'static str) {
-        ("cosmic-notifications", "System76", VERSION, "1.2")
+        ("wmde-notifications", "System76", VERSION, "1.2")
     }
 
     ///
@@ -384,7 +384,7 @@ impl Notifications {
                 let Ok(Ok(iface_ref)) = tokio::time::timeout(
                     tokio::time::Duration::from_millis(100),
                     object_server
-                        .interface::<_, NotificationsApplet>("/com/system76/NotificationsApplet"),
+                        .interface::<_, NotificationsApplet>("/fun/wmde/NotificationsApplet"),
                 )
                 .await
                 else {
