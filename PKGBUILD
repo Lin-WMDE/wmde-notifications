@@ -8,7 +8,7 @@
 # ships no data files (binary only).
 pkgname=wmde-notifications
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc="WMDE notifications daemon (fork of cosmic-notifications) - serves org.freedesktop.Notifications"
 arch=('x86_64')
 url="https://wmde.fun"
