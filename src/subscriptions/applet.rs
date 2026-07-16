@@ -15,6 +15,11 @@ use anyhow::{Result, bail};
 use cosmic_notifications_config::DAEMON_NOTIFICATIONS_FD;
 use std::os::unix::io::FromRawFd;
 
+/// D-Bus object path of the per-connection applet interface. Shared by the
+/// serve_at registration below and the interface lookup in notifications.rs so
+/// the two sides can't drift.
+pub(crate) const APPLET_OBJECT_PATH: &str = "/fun/wmde/NotificationsApplet";
+
 pub async fn setup_panel_conn(tx: Sender<Input>) -> Result<Connection> {
     let socket = setup_panel_socket()?;
     let guid = Guid::generate();
@@ -49,7 +54,10 @@ pub fn setup_panel_socket() -> Result<UnixStream> {
         bail!("DAEMON_NOTIFICATIONS_FD is not a valid RawFd.");
     };
 
-    let fd = unsafe { BorrowedFd::borrow_raw(raw_fd).try_clone_to_owned().unwrap() };
+    let fd = match unsafe { BorrowedFd::borrow_raw(raw_fd) }.try_clone_to_owned() {
+        Ok(fd) => fd,
+        Err(err) => bail!("DAEMON_NOTIFICATIONS_FD ({raw_fd}) is not an open fd: {err}"),
+    };
     info!("Connecting to daemon on fd {}", raw_fd);
 
     rustix::io::fcntl_setfd(
@@ -86,7 +94,7 @@ impl NotificationsSocket {
         let tx_clone = self.tx.clone();
         tokio::spawn(async move {
             let conn = match Builder::socket(mine).p2p().server(guid).unwrap().serve_at(
-                "/fun/wmde/NotificationsApplet",
+                APPLET_OBJECT_PATH,
                 NotificationsApplet {
                     tx: tx_clone.clone(),
                 },

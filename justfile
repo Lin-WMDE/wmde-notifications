@@ -1,5 +1,4 @@
 name := 'wmde-notifications'
-export APPID := 'fun.wmde.Notifications'
 
 rootdir := ''
 prefix := '/usr'

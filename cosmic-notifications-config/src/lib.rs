@@ -2,6 +2,10 @@ use cosmic_config::{CosmicConfigEntry, cosmic_config_derive::CosmicConfigEntry};
 
 pub const ID: &str = "fun.wmde.Notifications";
 
+/// App id of the panel notifications applet. Single source of truth shared by
+/// the daemon (which matches it against panel plugin lists) and the applet.
+pub const APPLET_ID: &str = "fun.wmde.AppletNotifications";
+
 pub const PANEL_NOTIFICATIONS_FD: &str = "PANEL_NOTIFICATIONS_FD";
 pub const DAEMON_NOTIFICATIONS_FD: &str = "DAEMON_NOTIFICATIONS_FD";
 

@@ -1,4 +1,4 @@
-pub const APP_ID: &str = "fun.wmde.Notifications";
+pub const APP_ID: &str = cosmic_notifications_config::ID;
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn profile() -> &'static str {

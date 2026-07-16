@@ -24,7 +24,15 @@ use std::collections::VecDeque;
 use std::time::Duration;
 use tokio::sync::mpsc;
 
-static NOTIFICATIONS_APPLET: &str = "fun.wmde.AppletNotifications";
+static NOTIFICATIONS_APPLET: &str = cosmic_notifications_config::APPLET_ID;
+
+// Panel/dock config namespaces the daemon watches, derived from the shared
+// cosmic_panel_config::NAME so they can't drift from the ids the panel writes.
+// watch_config requires &'static str, so these are formatted once on first use.
+static PANEL_PANEL_CONFIG_ID: std::sync::LazyLock<String> =
+    std::sync::LazyLock::new(|| format!("{}.Panel", cosmic_panel_config::NAME));
+static PANEL_DOCK_CONFIG_ID: std::sync::LazyLock<String> =
+    std::sync::LazyLock::new(|| format!("{}.Dock", cosmic_panel_config::NAME));
 
 pub fn run() -> cosmic::iced::Result {
     cosmic::app::run::<CosmicNotifications>(
@@ -442,7 +450,7 @@ impl cosmic::Application for CosmicNotifications {
     type Message = Message;
     type Executor = cosmic::executor::single::Executor;
     type Flags = ();
-    const APP_ID: &'static str = "fun.wmde.Notifications";
+    const APP_ID: &'static str = cosmic_notifications_config::ID;
 
     fn init(core: Core, _flags: ()) -> (Self, Task<Message>) {
         let helper = Config::new(
@@ -659,7 +667,7 @@ impl cosmic::Application for CosmicNotifications {
                     Message::Config(u.config)
                 }),
             self.core
-                .watch_config("fun.wmde.Panel.Panel")
+                .watch_config(PANEL_PANEL_CONFIG_ID.as_str())
                 .map(|u| {
                     for why in u
                         .errors
@@ -671,7 +679,7 @@ impl cosmic::Application for CosmicNotifications {
                     Message::PanelConfig(u.config)
                 }),
             self.core
-                .watch_config("fun.wmde.Panel.Dock")
+                .watch_config(PANEL_DOCK_CONFIG_ID.as_str())
                 .map(|u| {
                     for why in u
                         .errors
