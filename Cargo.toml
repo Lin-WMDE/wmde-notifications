@@ -43,13 +43,21 @@ default = ["systemd"]
 [workspace]
 members = ["cosmic-notifications-util", "cosmic-notifications-config"]
 
+# WMDE: shared release profile, see .doc/perf.
+#  - panic = "abort" drops .eh_frame and .gcc_except_table; catch_unwind stops catching,
+#    which in this stack only guards SVG parsing in iced's vector backends.
+#  - lto = "fat" with one codegen unit removes what monomorphisation duplicated.
+# The LTO half is expensive and single threaded; FAST=1 turns it off for development
+# builds without touching panic or opt-level, so behaviour still matches what ships.
 [profile.release]
 opt-level = "s"
-lto = "thin"
+lto = "fat"
 
 # Redirect the upstream libcosmic (and every crate it vendors: cosmic-config,
 # cosmic-theme, and all the iced_* crates) plus cosmic-panel-config to the local
 # WMDE forks. Crate names are kept upstream on purpose, so the patch keys match.
+codegen-units = 1
+panic = "abort"
 [patch."https://github.com/pop-os/libcosmic"]
 libcosmic = { path = "../libcosmic" }
 cosmic-config = { path = "../libcosmic/cosmic-config" }
