@@ -11,6 +11,9 @@ use std::{
     collections::HashMap, convert::Infallible, fmt, path::PathBuf, str::FromStr, time::SystemTime,
 };
 
+/// The most action buttons a card shows.
+pub const MAX_BUTTONS: usize = 3;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Notification {
     pub id: u32,
@@ -104,6 +107,16 @@ impl Notification {
             expire_timeout,
             time: SystemTime::now(),
         }
+    }
+
+    /// The actions drawn as buttons under the text. `default` is not among them: it is what
+    /// a click on the card itself does. Unlabelled actions have nothing to show, and more
+    /// than three buttons would not fit the card.
+    pub fn buttons(&self) -> impl Iterator<Item = &(ActionId, String)> {
+        self.actions
+            .iter()
+            .filter(|(id, label)| *id != ActionId::Default && !label.is_empty())
+            .take(MAX_BUTTONS)
     }
 
     pub fn transient(&self) -> bool {
@@ -236,4 +249,52 @@ pub enum CloseReason {
     Dismissed = 2,
     CloseNotification = 3,
     Undefined = 4,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn with_actions(actions: &[(&str, &str)]) -> Notification {
+        Notification {
+            id: 1,
+            app_name: String::new(),
+            app_icon: String::new(),
+            summary: String::new(),
+            body: String::new(),
+            actions: actions
+                .iter()
+                .map(|(id, label)| (id.parse().unwrap(), (*label).to_string()))
+                .collect(),
+            hints: Vec::new(),
+            expire_timeout: -1,
+            time: SystemTime::UNIX_EPOCH,
+        }
+    }
+
+    fn labels(notification: &Notification) -> Vec<&str> {
+        notification
+            .buttons()
+            .map(|(_, label)| label.as_str())
+            .collect()
+    }
+
+    /// The default action stays on the card, the others become buttons in their order.
+    #[test]
+    fn the_default_action_is_not_a_button() {
+        let n = with_actions(&[("default", "Open"), ("open", "Open"), ("eject", "Eject")]);
+        assert_eq!(labels(&n), ["Open", "Eject"]);
+    }
+
+    #[test]
+    fn an_unlabelled_action_is_not_a_button() {
+        let n = with_actions(&[("open", ""), ("eject", "Eject")]);
+        assert_eq!(labels(&n), ["Eject"]);
+    }
+
+    #[test]
+    fn no_more_than_three_buttons() {
+        let n = with_actions(&[("a", "A"), ("b", "B"), ("c", "C"), ("d", "D")]);
+        assert_eq!(labels(&n), ["A", "B", "C"]);
+    }
 }

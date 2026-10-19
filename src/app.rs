@@ -76,6 +76,8 @@ struct CosmicNotifications {
 #[derive(Debug, Clone)]
 enum Message {
     ActivateNotification(u32),
+    /// A button under the text: the action it names, not the card's default.
+    ActivateAction(u32, ActionId),
     ActivationToken(Option<String>, u32, Option<ActionId>),
     Dismissed(u32),
     Notification(notifications::Event),
@@ -522,6 +524,7 @@ impl CosmicNotifications {
                                             .map(|_: ()| Message::Ignore)
                                         ]
                                     )
+                                    .push_maybe(action_buttons(n))
                                     .width(Length::Fill),
                                 );
                                 (n.id, e)
@@ -769,6 +772,10 @@ impl cosmic::Application for CosmicNotifications {
                 tracing::trace!("requesting token for {id}");
                 return self.request_activation(id, None);
             }
+            Message::ActivateAction(id, action) => {
+                tracing::trace!("requesting token for {id} {action}");
+                return self.request_activation(id, Some(action));
+            }
             Message::ActivationToken(token, id, action) => {
                 tracing::trace!("token for {id}");
                 if let Some(token) = token {
@@ -933,4 +940,26 @@ impl cosmic::Application for CosmicNotifications {
             notifications::notifications().map(Message::Notification),
         ])
     }
+}
+
+/// The row of action buttons under a card's text, or nothing when the notification has no
+/// action but the default one. The buttons share the card's width equally, as on a Windows
+/// toast; each sends its own action, while a click elsewhere on the card still sends the
+/// default.
+fn action_buttons(n: &Notification) -> Option<Element<'static, Message>> {
+    let buttons: Vec<Element<'static, Message>> = n
+        .buttons()
+        .map(|(action, label)| {
+            button::standard(label.clone())
+                .width(Length::Fill)
+                .on_press(Message::ActivateAction(n.id, action.clone()))
+                .into()
+        })
+        .collect();
+    (!buttons.is_empty()).then(|| {
+        cosmic::widget::row::with_children(buttons)
+            .spacing(8)
+            .padding(iced::Padding::ZERO.top(8))
+            .into()
+    })
 }
